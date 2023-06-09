@@ -1,3 +1,5 @@
+from os import path as _sysio
+from os import mkdir as _mkdir
 from datetime import datetime as _datetime
 from traceback import format_exception as _exc
 from typing import Final as _Final
@@ -16,17 +18,23 @@ from ..assets.message import Message as _Message
 class Logger:
     def __init__(
             self,
-            name: str,
-            processor: list[_Processor]
+            name: str
     ) -> None:
         self._name: _Final[str] = name
-        self._log_file: _Final[_TextIO] = open(f"log/{name}/{_datetime.now().strftime('%y%m%d-%H_%M')}", 'w')
-        self._processor: _Final[list[_Processor]] = processor
+        log: _TextIO
+
+        if not _sysio.exists(f"log/{name}"):
+            _mkdir(f"log/{name}")
+
+        open(f"log/{name}/{_datetime.now().strftime('%y%m%d-%H_%M')}.log", 'x').close()
+        log = open(f"log/{name}/{_datetime.now().strftime('%y%m%d-%H_%M')}.log", 'w')
+
+        self._log_file: _Final[_TextIO] = log
         self._cache: _Optional[_Message] = None
 
     def log(self, content: str) -> None:
         print(f"[{self._name}] {content}")
-        self._log_file.write(f"[{self._name}] {content}\n")
+        self._log_file.write(f"[{_datetime.now().strftime('%p %I:%M:%S')}] {content}\n")
 
     def exception(
             self,
@@ -95,6 +103,6 @@ class Logger:
         self._cache = None
         return cache
 
-    def throw(self, thread: dict = None) -> None:  # TODO: Implement ThreadID
-        for i in self._processor:
+    def throw(self, processor: list[_Processor], thread: _Optional[dict] = None) -> None:  # TODO: Implement ThreadID
+        for i in processor:
             i.send(self.get_cache())
